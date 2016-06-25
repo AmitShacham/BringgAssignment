@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".StatisticsActivity">
+
+    <TextView
+        android:id="@+id/statistics_title_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="22sp" />
+
+    <LinearLayout
+        android:id="@+id/statistics_list_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:orientation="horizontal">
+
+        <TextView
+            style="@style/Statistics_List_Header"
+            android:text="@string/statistics_date" />
+
+        <TextView
+            style="@style/Statistics_List_Header"
+            android:text="@string/statistics_start_time" />
+
+        <TextView
+            style="@style/Statistics_List_Header"
+            android:text="@string/statistics_end_time" />
+
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/statistics_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="5dp"
+        android:layout_weight="10"
+        android:divider="@null" />
+
+</LinearLayout>

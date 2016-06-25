@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">BringgMobileClientAssignment</string>
+
+    <!-- Work Address Configuration Screen -->
+    <string name="work_address">Work Address:</string>
+    <string name="submit">Submit</string>
+
+    <!-- Statistics Screen -->
+    <string name="statistics_title">Statistics for %1$s</string>
+    <string name="statistics_date">Date</string>
+    <string name="statistics_start_time">Start Time</string>
+    <string name="statistics_end_time">End Time</string>
+
+    <!-- Geofence -->
+    <string name="geofence_transition_invalid_type">Geofence transition error: invalid transition type %1$d</string>
+
+</resources>
