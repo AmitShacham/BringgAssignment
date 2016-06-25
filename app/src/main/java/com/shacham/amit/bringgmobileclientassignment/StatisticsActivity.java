@@ -9,15 +9,12 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
@@ -36,14 +33,13 @@ public class StatisticsActivity extends Activity implements
     private static final int GEOFENCE_EXPIRATION_IN_MILLISECONDS = 12 * 60 * 60 * 1000; // 12 Hours
 
     private ArrayList<DayStatistics> mData;
-
     private GoogleApiClient mGoogleApiClient;
-
     private Address mWorkAddress;
     private LatLng mWorkAddressLatLng;
     private Geofence mGeofence;
     private PendingIntent mGeofencePendingIntent;
     private SharedPreferences mSharedPreferences;
+    private boolean mGeofenceAdded;
 
     private TextView mTitleTextView;
     private ListView mStatisticsListView;
@@ -57,8 +53,9 @@ public class StatisticsActivity extends Activity implements
         mSharedPreferences = getPreferences(MODE_PRIVATE);
 
         Intent intent = getIntent();
-        mWorkAddress = intent.getParcelableExtra(MainActivity.SHARED_PREFS_WORK_ADDRESS);
-        mWorkAddressLatLng = intent.getParcelableExtra(MainActivity.SHARED_PREFS_WORK_ADDRESS_LAT_LNG);
+        mWorkAddress = intent.getParcelableExtra(MainActivity.WORK_ADDRESS);
+        mWorkAddressLatLng = intent.getParcelableExtra(MainActivity.WORK_ADDRESS_LAT_LNG);
+        mGeofenceAdded = false;
 
         initViews();
         setScreenTitle();
@@ -99,13 +96,12 @@ public class StatisticsActivity extends Activity implements
                 .build();
     }
 
-    // TODO: Could be called multiple times if play services is disconnected and reconnected. Problem ?
     private void initGeoFencing() {
-        if (!mGoogleApiClient.isConnected()) {
-            Toast.makeText(this, "Google Api Services not connected", Toast.LENGTH_SHORT).show();
+        if (mGeofenceAdded) {
             return;
         }
 
+        mGeofenceAdded = true;
         try {
             LocationServices.GeofencingApi.addGeofences(mGoogleApiClient,
                 getGeofencingRequest(),

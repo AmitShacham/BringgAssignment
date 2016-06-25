@@ -2,8 +2,8 @@
     <string name="app_name">BringgMobileClientAssignment</string>
 
     <!-- Work Address Configuration Screen -->
-    <string name="work_address">Work Address:</string>
-    <string name="submit">Submit</string>
+    <string name="work_address">Your work address:</string>
+    <string name="confirm">Confirm</string>
 
     <!-- Statistics Screen -->
     <string name="statistics_title">Statistics for %1$s</string>
