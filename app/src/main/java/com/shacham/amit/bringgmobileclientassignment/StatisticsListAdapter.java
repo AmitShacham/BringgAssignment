@@ -8,7 +8,6 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 public class StatisticsListAdapter extends ArrayAdapter<DayStatistics> {
@@ -29,28 +28,32 @@ public class StatisticsListAdapter extends ArrayAdapter<DayStatistics> {
             LayoutInflater inflater = LayoutInflater.from(getContext());
             convertView = inflater.inflate(R.layout.statistics_list_item, parent, false);
             viewHolder.date = (TextView) convertView.findViewById(R.id.date);
-            viewHolder.startWorkTime = (TextView) convertView.findViewById(R.id.start_work_time);
-            viewHolder.endWorkTime = (TextView) convertView.findViewById(R.id.end_work_time);
+            viewHolder.workTime = (TextView) convertView.findViewById(R.id.work_time);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        String formattedDate = DATE_FORMAT.format(item.getDate());
-        viewHolder.date.setText(formattedDate);
+        String formattedDate;
+        if (item.getDate() != null) {
+            formattedDate = DATE_FORMAT.format(item.getDate());
+            viewHolder.date.setText(formattedDate);
+        } else {
+            viewHolder.date.setText("-");
+        }
 
-        formattedDate = TIME_FORMAT.format(item.getStartWorkTime());
-        viewHolder.startWorkTime.setText(formattedDate);
-
-        formattedDate = TIME_FORMAT.format(item.getEndWorkTime());
-        viewHolder.endWorkTime.setText(formattedDate);
+        if (item.getTotalWorkTime() != 0) {
+            formattedDate = TIME_FORMAT.format(item.getTotalWorkTime());
+            viewHolder.workTime.setText(formattedDate);
+        } else {
+            viewHolder.workTime.setText("-");
+        }
 
         return convertView;
     }
 
     private static class ViewHolder {
         TextView date;
-        TextView startWorkTime;
-        TextView endWorkTime;
+        TextView workTime;
     }
 }

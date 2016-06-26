@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.text.TextUtils;
@@ -20,6 +21,11 @@ import java.util.List;
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String TAG = "GeofenceTransitionsIS";
+    public static final String ENTERED = "Entered";
+    public static final String EXITED = "Exited";
+    public static final String UNKNOWN_TRANSITION = "Unknown Transition";
+
+    private StatisticsActivity.ResultsReceiver mResultsReceiver;
 
     public GeofenceTransitionsIntentService() {
         super(TAG);
@@ -38,8 +44,11 @@ public class GeofenceTransitionsIntentService extends IntentService {
                 geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
 
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
-            String geofenceTransitionDetails = getGeofenceTransitionDetails(geofenceTransition,
-                    triggeringGeofences);
+            String geofenceTransitionDetails = getGeofenceTransitionDetails(geofenceTransition, triggeringGeofences);
+
+            Bundle data = new Bundle();
+            data.putInt(StatisticsActivity.SERVICE_RESULT, geofenceTransition);
+            mResultsReceiver.onReceiveResult(data);
 
             sendNotification(geofenceTransitionDetails);
             Log.i(TAG, geofenceTransitionDetails);
@@ -79,11 +88,17 @@ public class GeofenceTransitionsIntentService extends IntentService {
     private String getTransitionString(int transitionType) {
         switch (transitionType) {
             case Geofence.GEOFENCE_TRANSITION_ENTER:
-                return "Entered";
+                return ENTERED;
             case Geofence.GEOFENCE_TRANSITION_EXIT:
-                return "Exited";
+                return EXITED;
             default:
-                return "Unknown Transition";
+                return UNKNOWN_TRANSITION;
         }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        mResultsReceiver = intent.getParcelableExtra(StatisticsActivity.SERVICE_RECEIVER);
+        return super.onStartCommand(intent, flags, startId);
     }
 }

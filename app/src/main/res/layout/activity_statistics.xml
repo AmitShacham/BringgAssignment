@@ -30,11 +30,7 @@
 
         <TextView
             style="@style/Statistics_List_Header"
-            android:text="@string/statistics_start_time" />
-
-        <TextView
-            style="@style/Statistics_List_Header"
-            android:text="@string/statistics_end_time" />
+            android:text="@string/statistics_total_time" />
 
     </LinearLayout>
 

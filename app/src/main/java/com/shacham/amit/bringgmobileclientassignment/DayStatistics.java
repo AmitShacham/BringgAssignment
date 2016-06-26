@@ -5,13 +5,11 @@ import java.util.Date;
 public class DayStatistics {
 
     private Date mDate;
-    private Date mStartWorkTime;
-    private Date mEndWorkTime;
+    private long mTotalWorkTime;
 
-    public DayStatistics(Date date, Date startWorkTime, Date endWorkTime) {
+    public DayStatistics(Date date, long totalWorkTime) {
         mDate = date;
-        mStartWorkTime = startWorkTime;
-        mEndWorkTime = endWorkTime;
+        mTotalWorkTime = totalWorkTime;
     }
 
     public Date getDate() {
@@ -22,19 +20,11 @@ public class DayStatistics {
         mDate = date;
     }
 
-    public Date getStartWorkTime() {
-        return mStartWorkTime;
+    public long getTotalWorkTime() {
+        return mTotalWorkTime;
     }
 
-    public void setStartWorkTime(Date startWorkTime) {
-        mStartWorkTime = startWorkTime;
-    }
-
-    public Date getEndWorkTime() {
-        return mEndWorkTime;
-    }
-
-    public void setEndWorkTime(Date endWorkTime) {
-        mEndWorkTime = endWorkTime;
+    public void setTotalWorkTime(long totalWorkTime) {
+        mTotalWorkTime = totalWorkTime;
     }
 }
