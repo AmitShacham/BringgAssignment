@@ -16,15 +16,7 @@ public class DayStatistics {
         return mDate;
     }
 
-    public void setDate(Date date) {
-        mDate = date;
-    }
-
     public long getTotalWorkTime() {
         return mTotalWorkTime;
-    }
-
-    public void setTotalWorkTime(long totalWorkTime) {
-        mTotalWorkTime = totalWorkTime;
     }
 }

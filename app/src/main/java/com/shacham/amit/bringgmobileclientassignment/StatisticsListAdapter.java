@@ -13,7 +13,6 @@ import java.util.List;
 public class StatisticsListAdapter extends ArrayAdapter<DayStatistics> {
 
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MMM-yyyy");
-    public static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
     public StatisticsListAdapter(Context context, int resource, List<DayStatistics> objects) {
         super(context, resource, objects);
@@ -34,20 +33,9 @@ public class StatisticsListAdapter extends ArrayAdapter<DayStatistics> {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        String formattedDate;
-        if (item.getDate() != null) {
-            formattedDate = DATE_FORMAT.format(item.getDate());
-            viewHolder.date.setText(formattedDate);
-        } else {
-            viewHolder.date.setText("-");
-        }
-
-        if (item.getTotalWorkTime() != 0) {
-            formattedDate = TIME_FORMAT.format(item.getTotalWorkTime());
-            viewHolder.workTime.setText(formattedDate);
-        } else {
-            viewHolder.workTime.setText("-");
-        }
+        String formattedDate = DATE_FORMAT.format(item.getDate());
+        viewHolder.date.setText(formattedDate);
+        viewHolder.workTime.setText(String.valueOf(item.getTotalWorkTime()));
 
         return convertView;
     }
