@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.shacham.amit.bringgmobileclientassignment">
 
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/> <!-- Used for Geofences -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- Used for Geofences -->
 
     <application
         android:allowBackup="true"
@@ -11,7 +11,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <service android:name=".GeofenceTransitionsIntentService"/>
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <service android:name="com.shacham.amit.bringgmobileclientassignment.GeofenceTransitionsIntentService" />
 
         <activity android:name="com.shacham.amit.bringgmobileclientassignment.MainActivity">
             <intent-filter>
@@ -20,7 +24,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".StatisticsActivity"/>
+        <activity android:name=".StatisticsActivity" />
     </application>
 
 </manifest>

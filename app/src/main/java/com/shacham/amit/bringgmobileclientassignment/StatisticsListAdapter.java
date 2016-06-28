@@ -12,7 +12,7 @@ import java.util.List;
 
 public class StatisticsListAdapter extends ArrayAdapter<DayStatistics> {
 
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd-MMM-yyyy");
+    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd MMM yyyy");
 
     public StatisticsListAdapter(Context context, int resource, List<DayStatistics> objects) {
         super(context, resource, objects);

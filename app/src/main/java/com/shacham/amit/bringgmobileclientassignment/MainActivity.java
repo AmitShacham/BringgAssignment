@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,6 +15,7 @@ import android.widget.Toast;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends Activity implements View.OnClickListener {
@@ -69,7 +71,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 LatLng latLng = getLocationFromEditText();
                 if (latLng == null) {
                     Toast.makeText(this, "Invalid work address", Toast.LENGTH_SHORT).show();
-                } else  {
+                } else {
                     saveWorkAddress();
                     startStatisticsActivity(latLng);
                 }
@@ -99,7 +101,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private void saveWorkAddress() {
         SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(SHARED_PREFS_WORK_ADDRESS, mAddress.getAddressLine(0));
+
+        ArrayList<String> addressFragments = new ArrayList<>();
+        for (int i = 0; i <= mAddress.getMaxAddressLineIndex(); i++) {
+            addressFragments.add(mAddress.getAddressLine(i));
+        }
+
+        String fullAddress = TextUtils.join(System.getProperty("line.separator"), addressFragments);
+        editor.putString(SHARED_PREFS_WORK_ADDRESS, fullAddress);
         editor.apply();
     }
 

@@ -7,13 +7,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.ResultReceiver;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
+import com.google.android.gms.location.LocationResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,11 +24,8 @@ import java.util.List;
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String TAG = "GeofenceTransitionsIS";
-    public static final String ENTERED = "Entered";
-    public static final String EXITED = "Exited";
-    public static final String UNKNOWN_TRANSITION = "Unknown Transition";
 
-    private StatisticsActivity.ResultsReceiver mResultsReceiver;
+    private ResultReceiver mResultsReceiver;
 
     public GeofenceTransitionsIntentService() {
         super(TAG);
@@ -33,6 +33,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        Log.i(TAG, "onHandleIntent");
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             Log.e(TAG, "Geofence error occurred");
@@ -48,7 +49,7 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
             Bundle data = new Bundle();
             data.putInt(StatisticsActivity.SERVICE_RESULT, geofenceTransition);
-            mResultsReceiver.onReceiveResult(data);
+            mResultsReceiver.send(0, data);
 
             sendNotification(geofenceTransitionDetails);
             Log.i(TAG, geofenceTransitionDetails);
@@ -88,11 +89,11 @@ public class GeofenceTransitionsIntentService extends IntentService {
     private String getTransitionString(int transitionType) {
         switch (transitionType) {
             case Geofence.GEOFENCE_TRANSITION_ENTER:
-                return ENTERED;
+                return "Entered";
             case Geofence.GEOFENCE_TRANSITION_EXIT:
-                return EXITED;
+                return "Exited";
             default:
-                return UNKNOWN_TRANSITION;
+                return "Unknown Transition";
         }
     }
 

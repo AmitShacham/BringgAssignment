@@ -1,6 +1,7 @@
 package com.shacham.amit.bringgmobileclientassignment;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -9,8 +10,7 @@ import android.content.pm.PackageManager;
 import android.location.Address;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -22,6 +22,8 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
@@ -31,6 +33,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class StatisticsActivity extends Activity implements
@@ -50,7 +53,7 @@ public class StatisticsActivity extends Activity implements
     private GoogleApiClient mGoogleApiClient;
     private Address mWorkAddress;
     private LatLng mWorkAddressLatLng;
-    private Geofence mGeofence;
+    private List<Geofence> mGeofences;
     private PendingIntent mGeofencePendingIntent;
     private SharedPreferences mSharedPreferences;
     private boolean mGeofenceAdded;
@@ -65,11 +68,8 @@ public class StatisticsActivity extends Activity implements
         setContentView(R.layout.activity_statistics);
 
         mGeofencePendingIntent = null;
-
-        // Get data from shared prefs, if exists:
+        mGeofences = new ArrayList<>();
         mSharedPreferences = getPreferences(MODE_PRIVATE);
-        Set<String> set = mSharedPreferences.getStringSet(SHARED_PREFS_DATA, null);
-        mData = (set == null) ? new ArrayList<String>() : new ArrayList<>(set);
 
         Intent intent = getIntent();
         mWorkAddress = intent.getParcelableExtra(MainActivity.WORK_ADDRESS);
@@ -78,9 +78,18 @@ public class StatisticsActivity extends Activity implements
 
         initViews();
         setScreenTitle();
+
+        getDataIfExists();
+        mData.add("18 Feb 1989;8");
         initListAdapter();
+
         initGooglePlayServices();
         populateGeofenceList();
+    }
+
+    public void getDataIfExists() {
+        Set<String> set = mSharedPreferences.getStringSet(SHARED_PREFS_DATA, null);
+        mData = (set == null) ? new ArrayList<String>() : new ArrayList<>(set);
     }
 
     private void initViews() {
@@ -110,15 +119,17 @@ public class StatisticsActivity extends Activity implements
     }
 
     private void populateGeofenceList() {
-        mGeofence = new Geofence.Builder()
+        Log.i(TAG, "Lat: " + mWorkAddressLatLng.latitude + ", Long: " + mWorkAddressLatLng.longitude);
+        mGeofences.add(new Geofence.Builder()
                 .setRequestId(mWorkAddress.getAddressLine(0))
                 .setCircularRegion(mWorkAddressLatLng.latitude, mWorkAddressLatLng.longitude, GEOFENCE_RADIUS_IN_METERS)
                 .setExpirationDuration(GEOFENCE_EXPIRATION_IN_MILLISECONDS)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
-                .build();
+                .build());
     }
 
     private void initGeoFencing() {
+        Log.i(TAG, "initGeoFencing");
         if (mGeofenceAdded) {
             return;
         }
@@ -133,6 +144,8 @@ public class StatisticsActivity extends Activity implements
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_FINE_LOCATION);
+        } else {
+            addGeofences();
         }
     }
 
@@ -152,6 +165,7 @@ public class StatisticsActivity extends Activity implements
     }
 
     private void addGeofences() {
+        Log.i(TAG, "addGeofences");
         try {
             LocationServices.GeofencingApi.addGeofences(mGoogleApiClient,
                     getGeofencingRequest(),
@@ -173,8 +187,8 @@ public class StatisticsActivity extends Activity implements
 
     private GeofencingRequest getGeofencingRequest() {
         GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
-        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
-        builder.addGeofence(mGeofence);
+        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER | GeofencingRequest.INITIAL_TRIGGER_DWELL | GeofencingRequest.INITIAL_TRIGGER_EXIT);
+        builder.addGeofences(mGeofences);
         return builder.build();
     }
 
@@ -183,55 +197,38 @@ public class StatisticsActivity extends Activity implements
             return mGeofencePendingIntent;
         }
 
-        ResultsReceiver callback = new ResultsReceiver();
         Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
-        intent.putExtra(SERVICE_RECEIVER, callback);
+        intent.putExtra(SERVICE_RECEIVER, new Receiver(new Handler()));
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    public class ResultsReceiver implements Parcelable {
+    @SuppressLint("ParcelCreator")
+    public class Receiver extends ResultReceiver {
         private int mResult;
 
-        public void onReceiveResult(Bundle data) {
-            mResult = data.getInt(SERVICE_RESULT);
+        public Receiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            mResult = resultData.getInt(SERVICE_RESULT);
             handleGeofenceResult(mResult);
-        }
-
-        protected ResultsReceiver() {
-        }
-
-        public final Creator<ResultsReceiver> CREATOR = new Creator<ResultsReceiver>() {
-            @Override
-            public ResultsReceiver createFromParcel(Parcel in) {
-                return new ResultsReceiver();
-            }
-
-            @Override
-            public ResultsReceiver[] newArray(int size) {
-                return new ResultsReceiver[size];
-            }
-        };
-
-        @Override
-        public int describeContents() {
-            return 0;
-        }
-
-        @Override
-        public void writeToParcel(Parcel dest, int flags) {
-            dest.writeInt(mResult);
+            super.onReceiveResult(resultCode, resultData);
         }
     }
 
     public void handleGeofenceResult(int result) {
         switch (result) {
             case Geofence.GEOFENCE_TRANSITION_ENTER:
+                Log.i(TAG, "handleGeofenceResult.enter");
                 mWorkDate = new Date();
                 break;
             case Geofence.GEOFENCE_TRANSITION_EXIT:
+                Log.i(TAG, "handleGeofenceResult.exit");
                 if (mWorkDate != null) {
                     String workDate = StatisticsListAdapter.DATE_FORMAT.format(mWorkDate);
-                    String totalWorkTime = String.valueOf(getTotalWorkTimeInHours(mWorkDate, new Date()));
+                    String totalWorkTime = String.valueOf(Utils.getTotalWorkTimeInHours(mWorkDate, new Date()));
                     mData.add(workDate + ";" + totalWorkTime);
                     saveDataToSharedPrefs();
                 }
@@ -244,13 +241,6 @@ public class StatisticsActivity extends Activity implements
         Set<String> set = new HashSet<>(mData);
         editor.putStringSet(SHARED_PREFS_DATA, set);
         editor.apply();
-    }
-
-    private long getTotalWorkTimeInHours(Date start, Date end) {
-        long diff = end.getTime() - start.getTime();
-        long seconds = diff / 1000;
-        long minutes = seconds / 60;
-        return minutes / 60;
     }
 
     /**
@@ -272,7 +262,11 @@ public class StatisticsActivity extends Activity implements
 
     @Override
     protected void onStop() {
+        Log.i(TAG, "onStop");
         super.onStop();
+        LocationServices.GeofencingApi.removeGeofences(
+                mGoogleApiClient,
+                getGeofencePendingIntent());
         mGoogleApiClient.disconnect();
     }
 
