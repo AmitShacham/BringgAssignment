@@ -1,16 +1,17 @@
 package com.shacham.amit.bringgmobileclientassignment;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -22,8 +23,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
@@ -42,10 +41,9 @@ public class StatisticsActivity extends Activity implements
 
     private static final String TAG = "StatisticsActivity";
 
-    private static final int GEOFENCE_RADIUS_IN_METERS = 1609; // 1 mile = 1.6 km
+    private static final int GEOFENCE_RADIUS_IN_METERS = 50; // 1 mile = 1.6 km
     private static final int GEOFENCE_EXPIRATION_IN_MILLISECONDS = 12 * 60 * 60 * 1000; // 12 Hours
     private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 200;
-    public static final String SERVICE_RECEIVER = "service_receiver";
     public static final String SERVICE_RESULT = "service_result";
     private static final String SHARED_PREFS_DATA = "shared_prefs_data";
 
@@ -58,6 +56,7 @@ public class StatisticsActivity extends Activity implements
     private SharedPreferences mSharedPreferences;
     private boolean mGeofenceAdded;
     private Date mWorkDate;
+    private MyRequestReceiver mReceiver;
 
     private TextView mTitleTextView;
     private ListView mStatisticsListView;
@@ -76,15 +75,23 @@ public class StatisticsActivity extends Activity implements
         mWorkAddressLatLng = intent.getParcelableExtra(MainActivity.WORK_ADDRESS_LAT_LNG);
         mGeofenceAdded = false;
 
+        registerReceiver();
+
         initViews();
         setScreenTitle();
 
         getDataIfExists();
-        mData.add("18 Feb 1989;8");
         initListAdapter();
 
         initGooglePlayServices();
         populateGeofenceList();
+    }
+
+    private void registerReceiver() {
+        IntentFilter filter = new IntentFilter(GeofenceTransitionsIntentService.RESPONSE);
+        filter.addCategory(Intent.CATEGORY_DEFAULT);
+        mReceiver = new MyRequestReceiver();
+        registerReceiver(mReceiver, filter);
     }
 
     public void getDataIfExists() {
@@ -129,7 +136,6 @@ public class StatisticsActivity extends Activity implements
     }
 
     private void initGeoFencing() {
-        Log.i(TAG, "initGeoFencing");
         if (mGeofenceAdded) {
             return;
         }
@@ -165,7 +171,6 @@ public class StatisticsActivity extends Activity implements
     }
 
     private void addGeofences() {
-        Log.i(TAG, "addGeofences");
         try {
             LocationServices.GeofencingApi.addGeofences(mGoogleApiClient,
                     getGeofencingRequest(),
@@ -187,7 +192,7 @@ public class StatisticsActivity extends Activity implements
 
     private GeofencingRequest getGeofencingRequest() {
         GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
-        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER | GeofencingRequest.INITIAL_TRIGGER_DWELL | GeofencingRequest.INITIAL_TRIGGER_EXIT);
+        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
         builder.addGeofences(mGeofences);
         return builder.build();
     }
@@ -198,42 +203,7 @@ public class StatisticsActivity extends Activity implements
         }
 
         Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
-        intent.putExtra(SERVICE_RECEIVER, new Receiver(new Handler()));
         return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    @SuppressLint("ParcelCreator")
-    public class Receiver extends ResultReceiver {
-        private int mResult;
-
-        public Receiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-            mResult = resultData.getInt(SERVICE_RESULT);
-            handleGeofenceResult(mResult);
-            super.onReceiveResult(resultCode, resultData);
-        }
-    }
-
-    public void handleGeofenceResult(int result) {
-        switch (result) {
-            case Geofence.GEOFENCE_TRANSITION_ENTER:
-                Log.i(TAG, "handleGeofenceResult.enter");
-                mWorkDate = new Date();
-                break;
-            case Geofence.GEOFENCE_TRANSITION_EXIT:
-                Log.i(TAG, "handleGeofenceResult.exit");
-                if (mWorkDate != null) {
-                    String workDate = StatisticsListAdapter.DATE_FORMAT.format(mWorkDate);
-                    String totalWorkTime = String.valueOf(Utils.getTotalWorkTimeInHours(mWorkDate, new Date()));
-                    mData.add(workDate + ";" + totalWorkTime);
-                    saveDataToSharedPrefs();
-                }
-                break;
-        }
     }
 
     private void saveDataToSharedPrefs() {
@@ -241,6 +211,29 @@ public class StatisticsActivity extends Activity implements
         Set<String> set = new HashSet<>(mData);
         editor.putStringSet(SHARED_PREFS_DATA, set);
         editor.apply();
+    }
+
+    public class MyRequestReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String data = intent.getStringExtra(SERVICE_RESULT);
+            if (data != null) {
+                String transition = data.substring(0, data.indexOf(":"));
+                if (transition.equals(GeofenceTransitionsIntentService.ENTERED)) {
+                    Log.i(TAG, "Entered");
+                    mWorkDate = new Date();
+                } else if (transition.equals(GeofenceTransitionsIntentService.EXITED)) {
+                    Log.i(TAG, "Exited");
+                    if (mWorkDate != null) {
+                        String workDate = StatisticsListAdapter.DATE_FORMAT.format(mWorkDate);
+                        String totalWorkTime = String.valueOf(Utils.getTotalWorkTimeInHours(mWorkDate, new Date()));
+                        mData.add(workDate + ";" + totalWorkTime);
+                        initListAdapter();
+                        saveDataToSharedPrefs();
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -262,12 +255,12 @@ public class StatisticsActivity extends Activity implements
 
     @Override
     protected void onStop() {
-        Log.i(TAG, "onStop");
         super.onStop();
         LocationServices.GeofencingApi.removeGeofences(
                 mGoogleApiClient,
                 getGeofencePendingIntent());
         mGoogleApiClient.disconnect();
+        unregisterReceiver(mReceiver);
     }
 
     @Override
@@ -277,7 +270,6 @@ public class StatisticsActivity extends Activity implements
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Log.i(TAG, "Connected to GoogleApiClient");
         initGeoFencing();
     }
 

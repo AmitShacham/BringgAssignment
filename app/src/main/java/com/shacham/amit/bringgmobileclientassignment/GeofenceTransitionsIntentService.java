@@ -24,8 +24,10 @@ import java.util.List;
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String TAG = "GeofenceTransitionsIS";
-
-    private ResultReceiver mResultsReceiver;
+    public static final String ENTERED = "Entered";
+    public static final String EXITED = "Exited";
+    public static final String UNKNOWN_TRANSITION = "Unknown Transition";
+    public static final String RESPONSE = "response";
 
     public GeofenceTransitionsIntentService() {
         super(TAG);
@@ -33,7 +35,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        Log.i(TAG, "onHandleIntent");
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             Log.e(TAG, "Geofence error occurred");
@@ -46,13 +47,9 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
             String geofenceTransitionDetails = getGeofenceTransitionDetails(geofenceTransition, triggeringGeofences);
-
-            Bundle data = new Bundle();
-            data.putInt(StatisticsActivity.SERVICE_RESULT, geofenceTransition);
-            mResultsReceiver.send(0, data);
-
-            sendNotification(geofenceTransitionDetails);
             Log.i(TAG, geofenceTransitionDetails);
+
+            sendDataBackToActivity(geofenceTransitionDetails);
         } else {
             Log.e(TAG, getString(R.string.geofence_transition_invalid_type, geofenceTransition));
         }
@@ -69,37 +66,22 @@ public class GeofenceTransitionsIntentService extends IntentService {
         return geofenceTransitionString + ": " + triggeringGeofencesIdsString;
     }
 
-    private void sendNotification(String notificationDetails) {
-        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(notificationIntent);
-        PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-        builder.setColor(Color.RED)
-                .setContentTitle(notificationDetails)
-                .setContentText("Click notification to return to app")
-                .setContentIntent(notificationPendingIntent);
-
-        builder.setAutoCancel(true);
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(0, builder.build());
+    private void sendDataBackToActivity(String data) {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(RESPONSE);
+        broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        broadcastIntent.putExtra(StatisticsActivity.SERVICE_RESULT, data);
+        sendBroadcast(broadcastIntent);
     }
 
     private String getTransitionString(int transitionType) {
         switch (transitionType) {
             case Geofence.GEOFENCE_TRANSITION_ENTER:
-                return "Entered";
+                return ENTERED;
             case Geofence.GEOFENCE_TRANSITION_EXIT:
-                return "Exited";
+                return EXITED;
             default:
-                return "Unknown Transition";
+                return UNKNOWN_TRANSITION;
         }
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        mResultsReceiver = intent.getParcelableExtra(StatisticsActivity.SERVICE_RECEIVER);
-        return super.onStartCommand(intent, flags, startId);
     }
 }
